@@ -105,7 +105,7 @@ function startGlobal() {
     p.wrapper.classList.remove('user', 'offset');
     p.wrapper.classList.add('global');
   });
-  syncPlayers();
+  syncPlayers(true);
 }
 
 function pauseGlobal() {
@@ -120,7 +120,7 @@ function pauseGlobal() {
     p.wrapper.classList.remove('user', 'offset');
     p.wrapper.classList.add('global');
   });
-  syncPlayers();
+  syncPlayers(true);
 }
 
 playToggle.addEventListener('click', () => {
@@ -135,7 +135,7 @@ function adjustOffset(player, diff) {
   player.offset += diff;
   player.offsetDisplay.textContent = `${player.offset}s`;
   if (player.infoOffset) player.infoOffset.textContent = `${player.offset}s`;
-  syncPlayers();
+  syncPlayers(true);
 }
 
 function movePlayer(player, dir) {
@@ -153,13 +153,13 @@ function shouldPlay(player, time) {
   return time >= player.startTime && time <= end;
 }
 
-function syncPlayers() {
+function syncPlayers(force = false) {
   if (players.length === 0 || earliestStart === null) return;
   const baseSeconds = parseInt(seekBar.value, 10);
   const baseTime = earliestStart + baseSeconds * 1000;
 
   players.forEach(p => {
-    if (p.lastControlledBy === 'user' && Date.now() - p.lastUserTime < 30000) {
+    if (!force && p.lastControlledBy === 'user' && Date.now() - p.lastUserTime < 30000) {
       if (p.infoTime) p.infoTime.textContent = new Date(baseTime + p.offset * 1000).toLocaleString();
       return;
     }
@@ -430,11 +430,11 @@ function createPlayer(label, options, startTime, withChat, videoId, userId, dura
 
 seekBar.addEventListener('input', () => {
   updateSeekDisplay();
-  syncPlayers();
+  syncPlayers(true);
 });
 
 document.getElementById('add-button').addEventListener('click', addStream);
-document.getElementById('sync-button').addEventListener('click', syncPlayers);
+document.getElementById('sync-button').addEventListener('click', () => syncPlayers(true));
 document.getElementById('save-api').addEventListener('click', async () => {
   const id = clientIdInput.value.trim();
   const secret = clientSecretInput.value.trim();
