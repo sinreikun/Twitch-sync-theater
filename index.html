@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twitch Sync Theater</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Twitch Sync Theater</h1>
+  </header>
+  <main id="player-container">
+    <!-- プレイヤーがここに生成される -->
+  </main>
+  <section id="controls">
+    <input type="text" id="channel-input" placeholder="チャンネル名 or VOD URL">
+    <button id="add-button">追加</button>
+    <button id="sync-button">同期再生</button>
+  </section>
+  <script src="twitch-api.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
