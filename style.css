@@ -25,6 +25,7 @@ body {
   padding: 10px;
   box-sizing: border-box;
   overflow-y: auto;
+  z-index: 1000;
   transition: transform 0.3s ease;
   transform: translateX(100%);
 }
@@ -87,7 +88,7 @@ body {
 #player-container {
   flex-grow: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 8px;
   padding: 10px;
   box-sizing: border-box;
@@ -140,6 +141,7 @@ body {
   margin-bottom: 10px;
   border-radius: 4px;
   font-size: 14px;
+  border-left: 4px solid transparent;
 }
 
 .vod-info .controls {
@@ -166,6 +168,12 @@ body {
   position: relative;
   flex-grow: 1;
   margin-right: 10px;
+  display: flex;
+  align-items: center;
+}
+
+#play-toggle {
+  margin-right: 6px;
 }
 
 #global-seek #seek-bar {

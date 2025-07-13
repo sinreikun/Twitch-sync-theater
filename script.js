@@ -1,6 +1,8 @@
 let players = [];
 let earliestStart = null;
 let markers = [];
+let playInterval = null;
+let playing = false;
 
 const seekBar = document.getElementById('seek-bar');
 const seekTime = document.getElementById('seek-time');
@@ -10,12 +12,22 @@ const vodList = document.getElementById('vod-list');
 const clientIdInput = document.getElementById('client-id');
 const clientSecretInput = document.getElementById('client-secret');
 const apiError = document.getElementById('api-error');
+const playToggle = document.getElementById('play-toggle');
 
 function formatTime(sec) {
   const h = Math.floor(sec / 3600).toString().padStart(2, '0');
   const m = Math.floor((sec % 3600) / 60).toString().padStart(2, '0');
   const s = Math.floor(sec % 60).toString().padStart(2, '0');
   return `${h}:${m}:${s}`;
+}
+
+function colorFromId(id) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  }
+  const hue = hash % 360;
+  return `hsl(${hue},70%,50%)`;
 }
 
 function updateSeekDisplay() {
@@ -31,7 +43,9 @@ function updateMarkers() {
     if (diff < 0 || diff > max) return;
     const marker = document.createElement('div');
     marker.className = 'marker';
+    marker.dataset.vodid = p.id;
     marker.style.left = `${diff / max * 100}%`;
+    marker.style.backgroundColor = p.color;
     const label = document.createElement('span');
     label.textContent = formatTime(diff);
     marker.appendChild(label);
@@ -44,11 +58,48 @@ document.getElementById('toggle-sidebar').addEventListener('click', () => {
   sidebar.classList.toggle('closed');
 });
 
+function startGlobal() {
+  if (playing) return;
+  playing = true;
+  playToggle.textContent = '⏸';
+  playInterval = setInterval(() => {
+    let val = parseInt(seekBar.value, 10);
+    if (val < parseInt(seekBar.max, 10)) {
+      seekBar.value = val + 1;
+      updateSeekDisplay();
+      syncPlayers();
+    }
+  }, 1000);
+  syncPlayers();
+}
+
+function pauseGlobal() {
+  if (!playing) return;
+  playing = false;
+  playToggle.textContent = '▶';
+  clearInterval(playInterval);
+  playInterval = null;
+  syncPlayers();
+}
+
+playToggle.addEventListener('click', () => {
+  if (playing) {
+    pauseGlobal();
+  } else {
+    startGlobal();
+  }
+});
+
 function adjustOffset(player, diff) {
   player.offset += diff;
   player.offsetDisplay.textContent = `${player.offset}s`;
   if (player.infoOffset) player.infoOffset.textContent = `${player.offset}s`;
   syncPlayers();
+}
+
+function shouldPlay(player, time) {
+  const end = player.duration ? player.startTime + player.duration * 1000 : Infinity;
+  return time >= player.startTime && time <= end;
 }
 
 function syncPlayers() {
@@ -58,8 +109,18 @@ function syncPlayers() {
 
   players.forEach(p => {
     let sec = (baseTime - p.startTime) / 1000 + p.offset;
+    if (p.duration && sec > p.duration) sec = p.duration;
     if (sec < 0) sec = 0;
     p.player.seek(sec);
+    if (playing) {
+      if (shouldPlay(p, baseTime)) {
+        p.player.play();
+      } else {
+        p.player.pause();
+      }
+    } else {
+      p.player.pause();
+    }
     if (p.infoTime) p.infoTime.textContent = new Date(baseTime + p.offset * 1000).toLocaleString();
   });
 }
@@ -79,6 +140,7 @@ async function addStream() {
   }
 
   let startTime = null;
+  let duration = null;
   let label = val;
   let videoId = null;
   let userId = null;
@@ -101,6 +163,7 @@ async function addStream() {
       if (info) {
         startTime = info.createdAt;
         userId = info.userId;
+        duration = info.duration;
       }
     } catch (e) {
       console.error(e);
@@ -117,6 +180,7 @@ async function addStream() {
       if (info) {
         startTime = info.createdAt;
         userId = info.userId;
+        duration = info.duration;
       }
     } catch (e) {
       console.error(e);
@@ -151,11 +215,11 @@ async function addStream() {
     alert('開始時刻を取得できませんでした');
     return;
   }
-  createPlayer(label, options, startTime, withChat, videoId, userId);
+  createPlayer(label, options, startTime, withChat, videoId, userId, duration);
   apiError.textContent = '';
 }
 
-function createPlayer(label, options, startTime, withChat, videoId, userId) {
+function createPlayer(label, options, startTime, withChat, videoId, userId, duration) {
   const container = document.getElementById('player-container');
   const wrapper = document.createElement('div');
   wrapper.className = 'player-wrapper';
@@ -199,6 +263,10 @@ function createPlayer(label, options, startTime, withChat, videoId, userId) {
   const playerInstance = new Twitch.Player(id, options);
   const info = document.createElement('div');
   info.className = 'vod-info';
+  const pid = videoId ? String(videoId) : label;
+  const color = colorFromId(pid);
+  info.dataset.vodid = pid;
+  info.style.borderLeftColor = color;
   info.innerHTML = `<div>🆔 <span class="vid">${videoId ? videoId : 'LIVE'}</span></div>` +
     `<div>👤 <span class="uid">${userId || ''}</span></div>` +
     `<div>⏰ <span class="ptime"></span></div>`;
@@ -216,7 +284,7 @@ function createPlayer(label, options, startTime, withChat, videoId, userId) {
   info.appendChild(ctrl);
   vodList.appendChild(info);
 
-  const player = { label, player: playerInstance, startTime, offset: 0, offsetDisplay: display, infoTime: info.querySelector('.ptime'), infoOffset: off2, infoElem: info };
+  const player = { label, id: pid, color, player: playerInstance, startTime, duration, offset: 0, offsetDisplay: display, infoTime: info.querySelector('.ptime'), infoOffset: off2, infoElem: info };
   minus.addEventListener('click', () => adjustOffset(player, -1));
   plus.addEventListener('click', () => adjustOffset(player, 1));
   minus2.addEventListener('click', () => adjustOffset(player, -1));
@@ -287,6 +355,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   } else {
     apiError.textContent = 'API設定が未完了です';
   }
+  playToggle.textContent = '▶';
   updateSeekDisplay();
 });
 

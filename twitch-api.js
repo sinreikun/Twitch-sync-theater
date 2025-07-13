@@ -130,8 +130,16 @@ async function getVideoInfo(videoId) {
   }
   const item = data.data[0];
   const createdAt = new Date(item.created_at).getTime();
+  const durationStr = item.duration || '';
+  let durSec = 0;
+  durationStr.replace(/(\d+)([hms])/g, (_, n, unit) => {
+    n = parseInt(n, 10);
+    if (unit === 'h') durSec += n * 3600;
+    if (unit === 'm') durSec += n * 60;
+    if (unit === 's') durSec += n;
+  });
   console.log(`\u{1F39B} VOD start: ${createdAt} (${new Date(createdAt).toLocaleString()})`);
-  return { createdAt, userId: item.user_id };
+  return { createdAt, userId: item.user_id, duration: durSec };
 }
 
 async function init() {
