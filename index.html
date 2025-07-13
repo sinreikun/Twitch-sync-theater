@@ -9,6 +9,11 @@
 <body>
   <header>
     <h1>Twitch Sync Theater</h1>
+    <div id="api-settings">
+      <label>Client ID: <input type="text" id="client-id"></label>
+      <label>OAuth Token: <input type="text" id="oauth-token"></label>
+      <button id="save-api">保存</button>
+    </div>
   </header>
   <main id="player-container">
     <!-- プレイヤーがここに生成される -->
@@ -17,6 +22,8 @@
     <input type="text" id="channel-input" placeholder="チャンネル名 or VOD URL">
     <button id="add-button">追加</button>
     <button id="sync-button">同期再生</button>
+    <input type="range" id="seek-bar" min="0" max="7200" value="0" step="1">
+    <span id="seek-time">00:00:00</span>
   </section>
   <script src="twitch-api.js"></script>
   <script src="script.js"></script>

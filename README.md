@@ -21,7 +21,6 @@ TwitchTheaterのようなUIに、時刻ベースの同期機能と補正調整�
 ## 📦 公開例（GitHub Pages）
 https://yourusername.github.io/Twitch-sync-theater/
 
-## 📄 注意事項
-
-- Twitch APIキー（Client ID + OAuth Token）は設定欄から入力してください
+- Twitch APIキー（Client ID + OAuth Token）は設定欄から入力してください。
+  入力した値はローカルストレージに保存され、次回以降自動で反映されます。
 - 本ツールは非公式であり、Twitchとは無関係です

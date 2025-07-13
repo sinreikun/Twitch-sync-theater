@@ -33,3 +33,24 @@ button {
   margin: 0 5px;
   padding: 5px 10px;
 }
+
+.player-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.player-controls {
+  margin-top: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#api-settings {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  justify-content: center;
+}
