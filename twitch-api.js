@@ -1,9 +1,25 @@
-const clientId = 'acxpx33f8xyopf4rw9vzp5wbhfrmz2';
-const clientSecret = 'ib2d9snnuwor1fl5nsr9y5q1rv1u5r';
+let clientId = localStorage.getItem('clientId') || '';
+let clientSecret = localStorage.getItem('clientSecret') || '';
 let accessToken = '';
 let tokenExpiry = 0;
 
+function setCredentials(id, secret) {
+  clientId = id;
+  clientSecret = secret;
+  localStorage.setItem('clientId', id);
+  localStorage.setItem('clientSecret', secret);
+  accessToken = '';
+  tokenExpiry = 0;
+}
+
+function hasCredentials() {
+  return !!clientId && !!clientSecret;
+}
+
 async function fetchToken() {
+  if (!hasCredentials()) {
+    throw new Error('missing credentials');
+  }
   const res = await fetch('https://id.twitch.tv/oauth2/token', {
     method: 'POST',
     headers: {
@@ -25,6 +41,9 @@ async function fetchToken() {
 }
 
 async function ensureToken() {
+  if (!hasCredentials()) {
+    throw new Error('missing credentials');
+  }
   if (!accessToken || Date.now() > tokenExpiry) {
     await fetchToken();
   }
@@ -102,14 +121,33 @@ async function getVideoStartTime(videoId) {
   return createdAt;
 }
 
-function init() {
-  fetchToken().catch(console.error);
+async function getVideoInfo(videoId) {
+  const url = `https://api.twitch.tv/helix/videos?id=${videoId}`;
+  const data = await apiFetch(url);
+  if (!data.data || data.data.length === 0) {
+    console.warn('VOD取得失敗', data);
+    return null;
+  }
+  const item = data.data[0];
+  const createdAt = new Date(item.created_at).getTime();
+  console.log(`\u{1F39B} VOD start: ${createdAt} (${new Date(createdAt).toLocaleString()})`);
+  return { createdAt, userId: item.user_id };
+}
+
+async function init() {
+  if (!hasCredentials()) {
+    throw new Error('missing credentials');
+  }
+  await fetchToken();
 }
 
 window.TwitchAPI = {
   init,
+  setCredentials,
+  hasCredentials,
   getUserId,
   getLatestVODStartTime,
   getLiveStartTime,
-  getVideoStartTime
+  getVideoStartTime,
+  getVideoInfo
 };

@@ -6,6 +6,10 @@ const seekBar = document.getElementById('seek-bar');
 const seekTime = document.getElementById('seek-time');
 const markersContainer = document.getElementById('markers');
 const sidebar = document.getElementById('sidebar');
+const vodList = document.getElementById('vod-list');
+const clientIdInput = document.getElementById('client-id');
+const clientSecretInput = document.getElementById('client-secret');
+const apiError = document.getElementById('api-error');
 
 function formatTime(sec) {
   const h = Math.floor(sec / 3600).toString().padStart(2, '0');
@@ -43,6 +47,7 @@ document.getElementById('toggle-sidebar').addEventListener('click', () => {
 function adjustOffset(player, diff) {
   player.offset += diff;
   player.offsetDisplay.textContent = `${player.offset}s`;
+  if (player.infoOffset) player.infoOffset.textContent = `${player.offset}s`;
   syncPlayers();
 }
 
@@ -55,6 +60,7 @@ function syncPlayers() {
     let sec = (baseTime - p.startTime) / 1000 + p.offset;
     if (sec < 0) sec = 0;
     p.player.seek(sec);
+    if (p.infoTime) p.infoTime.textContent = new Date(baseTime + p.offset * 1000).toLocaleString();
   });
 }
 
@@ -65,8 +71,17 @@ async function addStream() {
   input.value = '';
   const withChat = document.getElementById('with-chat').checked;
 
+  if (!TwitchAPI.hasCredentials()) {
+    apiError.textContent = 'API設定が未完了です';
+    return;
+  } else {
+    apiError.textContent = '';
+  }
+
   let startTime = null;
   let label = val;
+  let videoId = null;
+  let userId = null;
   let options = {
     width: 640,
     height: 360,
@@ -79,22 +94,34 @@ async function addStream() {
     return;
   }
   if (match) {
-    const videoId = match[1];
+    videoId = match[1];
     console.log(`\u{1F3AC} VOD ID: ${videoId}`);
     try {
-      startTime = await TwitchAPI.getVideoStartTime(videoId);
+      const info = await TwitchAPI.getVideoInfo(videoId);
+      if (info) {
+        startTime = info.createdAt;
+        userId = info.userId;
+      }
     } catch (e) {
       console.error(e);
+      apiError.textContent = '認証情報が正しいか確認してください';
+      return;
     }
     options.video = videoId;
     label = `v${videoId}`;
   } else if (/^\d+$/.test(val)) {
-    const videoId = val;
+    videoId = val;
     console.log(`\u{1F3AC} VOD ID: ${videoId}`);
     try {
-      startTime = await TwitchAPI.getVideoStartTime(videoId);
+      const info = await TwitchAPI.getVideoInfo(videoId);
+      if (info) {
+        startTime = info.createdAt;
+        userId = info.userId;
+      }
     } catch (e) {
       console.error(e);
+      apiError.textContent = '認証情報が正しいか確認してください';
+      return;
     }
     options.video = videoId;
     label = `v${videoId}`;
@@ -104,10 +131,18 @@ async function addStream() {
       startTime = await TwitchAPI.getLiveStartTime(login);
       if (!startTime) {
         const uid = await TwitchAPI.getUserId(login);
-        if (uid) startTime = await TwitchAPI.getLatestVODStartTime(uid);
+        if (uid) {
+          userId = uid;
+          startTime = await TwitchAPI.getLatestVODStartTime(uid);
+        }
+      }
+      if (!userId) {
+        userId = await TwitchAPI.getUserId(login);
       }
     } catch (e) {
       console.error(e);
+      apiError.textContent = '認証情報が正しいか確認してください';
+      return;
     }
     options.channel = login;
   }
@@ -116,10 +151,11 @@ async function addStream() {
     alert('開始時刻を取得できませんでした');
     return;
   }
-  createPlayer(label, options, startTime, withChat);
+  createPlayer(label, options, startTime, withChat, videoId, userId);
+  apiError.textContent = '';
 }
 
-function createPlayer(label, options, startTime, withChat) {
+function createPlayer(label, options, startTime, withChat, videoId, userId) {
   const container = document.getElementById('player-container');
   const wrapper = document.createElement('div');
   wrapper.className = 'player-wrapper';
@@ -161,9 +197,30 @@ function createPlayer(label, options, startTime, withChat) {
   }
 
   const playerInstance = new Twitch.Player(id, options);
-  const player = { label, player: playerInstance, startTime, offset: 0, offsetDisplay: display };
+  const info = document.createElement('div');
+  info.className = 'vod-info';
+  info.innerHTML = `<div>🆔 <span class="vid">${videoId ? videoId : 'LIVE'}</span></div>` +
+    `<div>👤 <span class="uid">${userId || ''}</span></div>` +
+    `<div>⏰ <span class="ptime"></span></div>`;
+  const ctrl = document.createElement('div');
+  ctrl.className = 'controls';
+  const minus2 = document.createElement('button');
+  minus2.textContent = '-1s';
+  const plus2 = document.createElement('button');
+  plus2.textContent = '+1s';
+  const off2 = document.createElement('span');
+  off2.textContent = '0s';
+  ctrl.appendChild(minus2);
+  ctrl.appendChild(off2);
+  ctrl.appendChild(plus2);
+  info.appendChild(ctrl);
+  vodList.appendChild(info);
+
+  const player = { label, player: playerInstance, startTime, offset: 0, offsetDisplay: display, infoTime: info.querySelector('.ptime'), infoOffset: off2, infoElem: info };
   minus.addEventListener('click', () => adjustOffset(player, -1));
   plus.addEventListener('click', () => adjustOffset(player, 1));
+  minus2.addEventListener('click', () => adjustOffset(player, -1));
+  plus2.addEventListener('click', () => adjustOffset(player, 1));
   mute.addEventListener('click', () => {
     const muted = playerInstance.getMuted();
     playerInstance.setMuted(!muted);
@@ -171,6 +228,7 @@ function createPlayer(label, options, startTime, withChat) {
   });
   remove.addEventListener('click', () => {
     wrapper.remove();
+    info.remove();
     players = players.filter(p => p !== player);
     if (players.length === 0) {
       earliestStart = null;
@@ -201,7 +259,42 @@ seekBar.addEventListener('input', () => {
 
 document.getElementById('add-button').addEventListener('click', addStream);
 document.getElementById('sync-button').addEventListener('click', syncPlayers);
-window.addEventListener('DOMContentLoaded', () => {
-  TwitchAPI.init();
+document.getElementById('save-api').addEventListener('click', async () => {
+  const id = clientIdInput.value.trim();
+  const secret = clientSecretInput.value.trim();
+  TwitchAPI.setCredentials(id, secret);
+  try {
+    await TwitchAPI.init();
+    apiError.textContent = '';
+  } catch (e) {
+    console.error(e);
+    apiError.textContent = '認証情報が正しいか確認してください';
+  }
+});
+document.getElementById('open-dev').addEventListener('click', () => {
+  window.open('https://dev.twitch.tv/console/apps', '_blank');
+});
+window.addEventListener('DOMContentLoaded', async () => {
+  clientIdInput.value = localStorage.getItem('clientId') || '';
+  clientSecretInput.value = localStorage.getItem('clientSecret') || '';
+  if (TwitchAPI.hasCredentials()) {
+    try {
+      await TwitchAPI.init();
+    } catch (e) {
+      console.error(e);
+      apiError.textContent = '認証情報が正しいか確認してください';
+    }
+  } else {
+    apiError.textContent = 'API設定が未完了です';
+  }
   updateSeekDisplay();
 });
+
+setInterval(() => {
+  players.forEach(p => {
+    if (p.infoTime) {
+      const t = new Date(p.startTime + p.player.getCurrentTime() * 1000);
+      p.infoTime.textContent = t.toLocaleString();
+    }
+  });
+}, 1000);

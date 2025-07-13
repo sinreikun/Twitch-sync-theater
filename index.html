@@ -18,17 +18,29 @@
         <label><input type="checkbox" id="with-chat"> チャット付き</label>
         <button id="add-button">追加</button>
       </section>
+      <section id="vod-list">
+        <h2>Streams</h2>
+      </section>
       <section>
         <h2>Control</h2>
         <button id="sync-button">同期再生</button>
-        <div id="seek-container">
-          <input type="range" id="seek-bar" min="0" max="7200" value="0" step="1">
-          <div id="markers"></div>
-        </div>
-        <span id="seek-time">00:00:00</span>
       </section>
-      <!-- API credentials are handled automatically and do not require user input -->
+      <section>
+        <h2>API設定</h2>
+        <div id="api-error" class="error"></div>
+        <label>Client ID <input type="text" id="client-id"></label>
+        <label>Client Secret <input type="password" id="client-secret"></label>
+        <button id="save-api">保存</button>
+        <button id="open-dev">Twitch 開発者ポータルを開く</button>
+      </section>
     </nav>
+  </div>
+  <div id="global-seek">
+    <div id="seek-container">
+      <input type="range" id="seek-bar" min="0" max="7200" value="0" step="1">
+      <div id="markers"></div>
+    </div>
+    <span id="seek-time">00:00:00</span>
   </div>
   <script src="twitch-api.js"></script>
   <script src="script.js"></script>
