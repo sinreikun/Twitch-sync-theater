@@ -53,12 +53,26 @@ function updateMarkers() {
   });
 }
 
+function renderOrder() {
+  const container = document.getElementById('player-container');
+  const infoParent = document.getElementById('vod-list');
+  players.forEach(p => {
+    container.appendChild(p.wrapper);
+    infoParent.appendChild(p.infoElem);
+  });
+}
+
 
 const toggleSidebarBtn = document.getElementById('toggleSidebar');
+const closeSidebarBtn = document.querySelector('.close-sidebar');
 toggleSidebarBtn.addEventListener('click', () => {
   const open = sidebar.classList.toggle('open');
   document.body.classList.toggle('sidebar-open', open);
-  toggleSidebarBtn.textContent = open ? '◀' : '▶';
+});
+
+closeSidebarBtn.addEventListener('click', () => {
+  sidebar.classList.remove('open');
+  document.body.classList.remove('sidebar-open');
 });
 
 function startGlobal() {
@@ -106,15 +120,7 @@ function movePlayer(player, dir) {
   if (newIdx < 0 || newIdx >= players.length) return;
   const other = players[newIdx];
   [players[idx], players[newIdx]] = [players[newIdx], players[idx]];
-  const container = document.getElementById('player-container');
-  const infoParent = document.getElementById('vod-list');
-  if (dir === -1) {
-    container.insertBefore(player.wrapper, other.wrapper);
-    infoParent.insertBefore(player.infoElem, other.infoElem);
-  } else {
-    container.insertBefore(other.wrapper, player.wrapper);
-    infoParent.insertBefore(other.infoElem, player.infoElem);
-  }
+  renderOrder();
 }
 
 function shouldPlay(player, time) {
@@ -341,10 +347,12 @@ function createPlayer(label, options, startTime, withChat, videoId, userId, dura
     }
     const maxDiff = players.length === 0 ? 0 : Math.max(...players.map(p => (p.startTime - earliestStart) / 1000));
     seekBar.max = Math.max(7200, Math.ceil(maxDiff) + 300);
+    renderOrder();
     updateMarkers();
   });
 
   players.push(player);
+  renderOrder();
 
   if (!earliestStart || startTime < earliestStart) {
     earliestStart = startTime;
