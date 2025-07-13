@@ -9,7 +9,11 @@ body {
 header {
   background: #6441a5;
   padding: 10px;
-  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
 }
 
 #player-container {
@@ -24,9 +28,17 @@ iframe {
   border: none;
 }
 
+.player-wrapper iframe {
+  width: 480px;
+  height: 270px;
+}
+
 #controls {
-  text-align: center;
-  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 button {
@@ -48,9 +60,9 @@ button {
 }
 
 #api-settings {
-  margin-top: 10px;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 5px;
   justify-content: center;
 }
