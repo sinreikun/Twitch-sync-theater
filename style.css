@@ -16,11 +16,11 @@ body {
 }
 
 #sidebar {
-  position: absolute;
+  position: fixed;
   right: 0;
   top: 0;
   bottom: 60px;
-  width: 250px;
+  width: 260px;
   background: #111;
   padding: 10px;
   box-sizing: border-box;
@@ -30,11 +30,11 @@ body {
   transform: translateX(100%);
 }
 
-#sidebar:not(.closed) {
+#sidebar.open {
   transform: translateX(0);
 }
 
-#toggle-sidebar {
+#toggleSidebar {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -87,12 +87,18 @@ body {
 
 #player-container {
   flex-grow: 1;
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 8px;
   padding: 10px;
   box-sizing: border-box;
   overflow: hidden;
+  transition: width 0.3s ease;
+}
+
+body.sidebar-open #player-container {
+  width: calc(100% - 260px);
 }
 
 

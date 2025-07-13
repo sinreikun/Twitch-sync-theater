@@ -54,8 +54,11 @@ function updateMarkers() {
 }
 
 
-document.getElementById('toggle-sidebar').addEventListener('click', () => {
-  sidebar.classList.toggle('closed');
+const toggleSidebarBtn = document.getElementById('toggleSidebar');
+toggleSidebarBtn.addEventListener('click', () => {
+  const open = sidebar.classList.toggle('open');
+  document.body.classList.toggle('sidebar-open', open);
+  toggleSidebarBtn.textContent = open ? '◀' : '▶';
 });
 
 function startGlobal() {
@@ -95,6 +98,23 @@ function adjustOffset(player, diff) {
   player.offsetDisplay.textContent = `${player.offset}s`;
   if (player.infoOffset) player.infoOffset.textContent = `${player.offset}s`;
   syncPlayers();
+}
+
+function movePlayer(player, dir) {
+  const idx = players.indexOf(player);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= players.length) return;
+  const other = players[newIdx];
+  [players[idx], players[newIdx]] = [players[newIdx], players[idx]];
+  const container = document.getElementById('player-container');
+  const infoParent = document.getElementById('vod-list');
+  if (dir === -1) {
+    container.insertBefore(player.wrapper, other.wrapper);
+    infoParent.insertBefore(player.infoElem, other.infoElem);
+  } else {
+    container.insertBefore(other.wrapper, player.wrapper);
+    infoParent.insertBefore(other.infoElem, player.infoElem);
+  }
 }
 
 function shouldPlay(player, time) {
@@ -272,28 +292,44 @@ function createPlayer(label, options, startTime, withChat, videoId, userId, dura
     `<div>⏰ <span class="ptime"></span></div>`;
   const ctrl = document.createElement('div');
   ctrl.className = 'controls';
+  const mute2 = document.createElement('button');
+  mute2.className = 'mute-toggle';
+  mute2.textContent = '🔇';
+  const upBtn = document.createElement('button');
+  upBtn.className = 'move-up';
+  upBtn.textContent = '⬆';
+  const downBtn = document.createElement('button');
+  downBtn.className = 'move-down';
+  downBtn.textContent = '⬇';
   const minus2 = document.createElement('button');
   minus2.textContent = '-1s';
   const plus2 = document.createElement('button');
   plus2.textContent = '+1s';
   const off2 = document.createElement('span');
   off2.textContent = '0s';
+  ctrl.appendChild(mute2);
+  ctrl.appendChild(upBtn);
+  ctrl.appendChild(downBtn);
   ctrl.appendChild(minus2);
   ctrl.appendChild(off2);
   ctrl.appendChild(plus2);
   info.appendChild(ctrl);
   vodList.appendChild(info);
 
-  const player = { label, id: pid, color, player: playerInstance, startTime, duration, offset: 0, offsetDisplay: display, infoTime: info.querySelector('.ptime'), infoOffset: off2, infoElem: info };
+  const player = { label, id: pid, color, player: playerInstance, startTime, duration, offset: 0, offsetDisplay: display, infoTime: info.querySelector('.ptime'), infoOffset: off2, infoElem: info, wrapper };
   minus.addEventListener('click', () => adjustOffset(player, -1));
   plus.addEventListener('click', () => adjustOffset(player, 1));
   minus2.addEventListener('click', () => adjustOffset(player, -1));
   plus2.addEventListener('click', () => adjustOffset(player, 1));
-  mute.addEventListener('click', () => {
+  mute.addEventListener('click', toggleMute);
+  mute2.addEventListener('click', toggleMute);
+  function toggleMute() {
     const muted = playerInstance.getMuted();
     playerInstance.setMuted(!muted);
-    mute.textContent = muted ? '🔈' : '🔇';
-  });
+    mute.textContent = mute2.textContent = muted ? '🔈' : '🔇';
+  }
+  upBtn.addEventListener('click', () => movePlayer(player, -1));
+  downBtn.addEventListener('click', () => movePlayer(player, 1));
   remove.addEventListener('click', () => {
     wrapper.remove();
     info.remove();
