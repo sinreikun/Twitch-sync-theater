@@ -1,8 +1,10 @@
 let players = [];
 let earliestStart = null;
+let markers = [];
 
 const seekBar = document.getElementById('seek-bar');
 const seekTime = document.getElementById('seek-time');
+const markersContainer = document.getElementById('markers');
 const sidebar = document.getElementById('sidebar');
 
 function formatTime(sec) {
@@ -16,21 +18,23 @@ function updateSeekDisplay() {
   seekTime.textContent = formatTime(parseInt(seekBar.value, 10));
 }
 
-function loadCredentials() {
-  const id = localStorage.getItem('clientId') || '';
-  const token = localStorage.getItem('oauthToken') || '';
-  document.getElementById('client-id').value = id;
-  document.getElementById('oauth-token').value = token;
-  if (id && token) {
-    TwitchAPI.setCredentials(id, token);
-  }
+function updateMarkers() {
+  markersContainer.innerHTML = '';
+  if (!earliestStart) return;
+  const max = parseInt(seekBar.max, 10);
+  players.forEach(p => {
+    const diff = Math.round((p.startTime - earliestStart) / 1000);
+    if (diff < 0 || diff > max) return;
+    const marker = document.createElement('div');
+    marker.className = 'marker';
+    marker.style.left = `${diff / max * 100}%`;
+    const label = document.createElement('span');
+    label.textContent = formatTime(diff);
+    marker.appendChild(label);
+    markersContainer.appendChild(marker);
+  });
 }
 
-function saveCredentials() {
-  const id = document.getElementById('client-id').value.trim();
-  const token = document.getElementById('oauth-token').value.trim();
-  TwitchAPI.setCredentials(id, token);
-}
 
 document.getElementById('toggle-sidebar').addEventListener('click', () => {
   sidebar.classList.toggle('closed');
@@ -158,6 +162,9 @@ function createPlayer(label, options, startTime, withChat) {
     } else {
       earliestStart = Math.min(...players.map(p => p.startTime));
     }
+    const maxDiff = players.length === 0 ? 0 : Math.max(...players.map(p => (p.startTime - earliestStart) / 1000));
+    seekBar.max = Math.max(7200, Math.ceil(maxDiff) + 300);
+    updateMarkers();
   });
 
   players.push(player);
@@ -167,6 +174,9 @@ function createPlayer(label, options, startTime, withChat) {
     seekBar.value = 0;
     updateSeekDisplay();
   }
+  const maxDiff = Math.max(...players.map(p => (p.startTime - earliestStart) / 1000));
+  seekBar.max = Math.max(7200, Math.ceil(maxDiff) + 300);
+  updateMarkers();
 }
 
 seekBar.addEventListener('input', () => {
@@ -176,8 +186,14 @@ seekBar.addEventListener('input', () => {
 
 document.getElementById('add-button').addEventListener('click', addStream);
 document.getElementById('sync-button').addEventListener('click', syncPlayers);
-document.getElementById('save-api').addEventListener('click', saveCredentials);
+document.getElementById('save-credentials').addEventListener('click', () => {
+  const cid = document.getElementById('client-id').value.trim();
+  const token = document.getElementById('oauth-token').value.trim();
+  TwitchAPI.saveCredentials(cid, token);
+});
 window.addEventListener('DOMContentLoaded', () => {
-  loadCredentials();
+  TwitchAPI.init();
+  document.getElementById('client-id').value = localStorage.getItem('twitch_client_id') || '';
+  document.getElementById('oauth-token').value = localStorage.getItem('twitch_oauth_token') || '';
   updateSeekDisplay();
 });

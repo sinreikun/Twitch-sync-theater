@@ -10,8 +10,8 @@
 <body>
   <div id="layout">
     <main id="player-container"></main>
-    <nav id="sidebar" class="open">
-      <button id="toggle-sidebar">☰</button>
+    <button id="toggle-sidebar">☰</button>
+    <nav id="sidebar" class="closed">
       <section>
         <h2>Add Stream</h2>
         <input type="text" id="channel-input" placeholder="チャンネル名 or VOD URL">
@@ -21,14 +21,17 @@
       <section>
         <h2>Control</h2>
         <button id="sync-button">同期再生</button>
-        <input type="range" id="seek-bar" min="0" max="7200" value="0" step="1">
+        <div id="seek-container">
+          <input type="range" id="seek-bar" min="0" max="7200" value="0" step="1">
+          <div id="markers"></div>
+        </div>
         <span id="seek-time">00:00:00</span>
       </section>
       <section>
-        <h2>API</h2>
-        <label>Client ID: <input type="text" id="client-id"></label>
-        <label>OAuth Token: <input type="text" id="oauth-token"></label>
-        <button id="save-api">保存</button>
+        <h2>API Settings</h2>
+        <input type="text" id="client-id" placeholder="Client ID">
+        <input type="text" id="oauth-token" placeholder="OAuth Token">
+        <button id="save-credentials">保存</button>
       </section>
     </nav>
   </div>
