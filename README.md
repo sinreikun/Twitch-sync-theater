@@ -10,7 +10,7 @@ UIは [TwitchTheater](https://twitchtheater.tv/) を参考に、画面右側の�
 - 共通シークバーで再生位置を時刻ベースで同期
 - 各動画に±調整ボタン（補正オフセット）
 - 各動画の開始時刻をシークバー上にマーカー表示
-- 完全クライアントサイドで動作（認証情報は自動取得されユーザー入力不要）
+- 完全クライアントサイドで動作（APIキーはローカル保存可能）
 - チャット付きプレイヤーを追加することも可能
 
 ## 🚀 利用方法
@@ -30,5 +30,14 @@ UIは [TwitchTheater](https://twitchtheater.tv/) を参考に、画面右側の�
 ## 📦 公開例（GitHub Pages）
 - https://yourusername.github.io/Twitch-sync-theater/
 
-認証情報はすべて内部で処理され、ユーザーによる入力は不要です。
 本ツールは非公式であり、Twitchとは無関係です
+
+### 🔐 Twitch API設定（初回のみ）
+
+1. https://dev.twitch.tv/console/apps にアクセスし、「＋ Register Your Application」をクリック。
+2. 以下のように入力：
+   - Name: Twitch Sync Theater
+   - OAuth Redirect URL: http://localhost （適当で構いません）
+   - Category: Website Integration
+3. 登録後に表示される **Client ID** と **Client Secret** をコピーしてください。
+4. 本アプリのサイドバーにある「API設定」欄へ入力し、「保存」ボタンを押すと以後は自動で利用されます。

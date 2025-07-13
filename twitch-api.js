@@ -1,9 +1,25 @@
-const clientId = 'YOUR_CLIENT_ID';
-const clientSecret = 'YOUR_CLIENT_SECRET';
+let clientId = localStorage.getItem('clientId') || '';
+let clientSecret = localStorage.getItem('clientSecret') || '';
 let accessToken = '';
 let tokenExpiry = 0;
 
+function setCredentials(id, secret) {
+  clientId = id;
+  clientSecret = secret;
+  localStorage.setItem('clientId', id);
+  localStorage.setItem('clientSecret', secret);
+  accessToken = '';
+  tokenExpiry = 0;
+}
+
+function hasCredentials() {
+  return !!clientId && !!clientSecret;
+}
+
 async function fetchToken() {
+  if (!hasCredentials()) {
+    throw new Error('missing credentials');
+  }
   const res = await fetch('https://id.twitch.tv/oauth2/token', {
     method: 'POST',
     headers: {
@@ -25,6 +41,9 @@ async function fetchToken() {
 }
 
 async function ensureToken() {
+  if (!hasCredentials()) {
+    throw new Error('missing credentials');
+  }
   if (!accessToken || Date.now() > tokenExpiry) {
     await fetchToken();
   }
@@ -102,12 +121,17 @@ async function getVideoStartTime(videoId) {
   return createdAt;
 }
 
-function init() {
-  fetchToken().catch(console.error);
+async function init() {
+  if (!hasCredentials()) {
+    throw new Error('missing credentials');
+  }
+  await fetchToken();
 }
 
 window.TwitchAPI = {
   init,
+  setCredentials,
+  hasCredentials,
   getUserId,
   getLatestVODStartTime,
   getLiveStartTime,

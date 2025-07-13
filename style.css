@@ -40,6 +40,16 @@ body {
   margin-bottom: 20px;
 }
 
+#sidebar section label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.error {
+  color: #f66;
+  margin: 5px 0;
+}
+
 #seek-container {
   position: relative;
 }

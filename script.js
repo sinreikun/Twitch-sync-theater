@@ -6,6 +6,9 @@ const seekBar = document.getElementById('seek-bar');
 const seekTime = document.getElementById('seek-time');
 const markersContainer = document.getElementById('markers');
 const sidebar = document.getElementById('sidebar');
+const clientIdInput = document.getElementById('client-id');
+const clientSecretInput = document.getElementById('client-secret');
+const apiError = document.getElementById('api-error');
 
 function formatTime(sec) {
   const h = Math.floor(sec / 3600).toString().padStart(2, '0');
@@ -65,6 +68,13 @@ async function addStream() {
   input.value = '';
   const withChat = document.getElementById('with-chat').checked;
 
+  if (!TwitchAPI.hasCredentials()) {
+    apiError.textContent = 'API設定が未完了です';
+    return;
+  } else {
+    apiError.textContent = '';
+  }
+
   let startTime = null;
   let label = val;
   let options = {
@@ -85,6 +95,8 @@ async function addStream() {
       startTime = await TwitchAPI.getVideoStartTime(videoId);
     } catch (e) {
       console.error(e);
+      apiError.textContent = '認証情報が正しいか確認してください';
+      return;
     }
     options.video = videoId;
     label = `v${videoId}`;
@@ -95,6 +107,8 @@ async function addStream() {
       startTime = await TwitchAPI.getVideoStartTime(videoId);
     } catch (e) {
       console.error(e);
+      apiError.textContent = '認証情報が正しいか確認してください';
+      return;
     }
     options.video = videoId;
     label = `v${videoId}`;
@@ -108,6 +122,8 @@ async function addStream() {
       }
     } catch (e) {
       console.error(e);
+      apiError.textContent = '認証情報が正しいか確認してください';
+      return;
     }
     options.channel = login;
   }
@@ -117,6 +133,7 @@ async function addStream() {
     return;
   }
   createPlayer(label, options, startTime, withChat);
+  apiError.textContent = '';
 }
 
 function createPlayer(label, options, startTime, withChat) {
@@ -201,7 +218,33 @@ seekBar.addEventListener('input', () => {
 
 document.getElementById('add-button').addEventListener('click', addStream);
 document.getElementById('sync-button').addEventListener('click', syncPlayers);
-window.addEventListener('DOMContentLoaded', () => {
-  TwitchAPI.init();
+document.getElementById('save-api').addEventListener('click', async () => {
+  const id = clientIdInput.value.trim();
+  const secret = clientSecretInput.value.trim();
+  TwitchAPI.setCredentials(id, secret);
+  try {
+    await TwitchAPI.init();
+    apiError.textContent = '';
+  } catch (e) {
+    console.error(e);
+    apiError.textContent = '認証情報が正しいか確認してください';
+  }
+});
+document.getElementById('open-dev').addEventListener('click', () => {
+  window.open('https://dev.twitch.tv/console/apps', '_blank');
+});
+window.addEventListener('DOMContentLoaded', async () => {
+  clientIdInput.value = localStorage.getItem('clientId') || '';
+  clientSecretInput.value = localStorage.getItem('clientSecret') || '';
+  if (TwitchAPI.hasCredentials()) {
+    try {
+      await TwitchAPI.init();
+    } catch (e) {
+      console.error(e);
+      apiError.textContent = '認証情報が正しいか確認してください';
+    }
+  } else {
+    apiError.textContent = 'API設定が未完了です';
+  }
   updateSeekDisplay();
 });
