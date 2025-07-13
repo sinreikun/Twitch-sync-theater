@@ -20,7 +20,7 @@ body {
   right: 0;
   top: 0;
   bottom: 60px;
-  width: 260px;
+  width: 250px;
   background: #111;
   padding: 10px;
   box-sizing: border-box;
@@ -115,7 +115,7 @@ body {
 }
 
 body.sidebar-open #player-container {
-  width: calc(100% - 260px);
+  width: calc(100% - 250px);
 }
 
 
@@ -147,6 +147,18 @@ body.sidebar-open #player-container {
 
 .player-wrapper:hover .player-overlay {
   opacity: 1;
+}
+
+.player-wrapper.global {
+  outline: 2px solid #4af;
+}
+
+.player-wrapper.offset {
+  outline: 2px solid #fa4;
+}
+
+.player-wrapper.user {
+  opacity: 0.7;
 }
 
 .player-overlay button {

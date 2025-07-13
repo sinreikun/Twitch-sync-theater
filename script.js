@@ -3,6 +3,7 @@ let earliestStart = null;
 let markers = [];
 let playInterval = null;
 let playing = false;
+const SIDEBAR_WIDTH = 250;
 
 const seekBar = document.getElementById('seek-bar');
 const seekTime = document.getElementById('seek-time');
@@ -13,6 +14,15 @@ const clientIdInput = document.getElementById('client-id');
 const clientSecretInput = document.getElementById('client-secret');
 const apiError = document.getElementById('api-error');
 const playToggle = document.getElementById('play-toggle');
+const playerContainer = document.getElementById('player-container');
+
+function updateGridLayout() {
+  const sidebarOpen = document.body.classList.contains('sidebar-open');
+  playerContainer.style.width = sidebarOpen ? `calc(100% - ${SIDEBAR_WIDTH}px)` : '100%';
+  const count = players.length || 1;
+  const cols = Math.min(4, Math.max(1, Math.ceil(Math.sqrt(count))));
+  playerContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+}
 
 function formatTime(sec) {
   const h = Math.floor(sec / 3600).toString().padStart(2, '0');
@@ -68,11 +78,13 @@ const closeSidebarBtn = document.querySelector('.close-sidebar');
 toggleSidebarBtn.addEventListener('click', () => {
   const open = sidebar.classList.toggle('open');
   document.body.classList.toggle('sidebar-open', open);
+  updateGridLayout();
 });
 
 closeSidebarBtn.addEventListener('click', () => {
   sidebar.classList.remove('open');
   document.body.classList.remove('sidebar-open');
+  updateGridLayout();
 });
 
 function startGlobal() {
@@ -87,6 +99,12 @@ function startGlobal() {
       syncPlayers();
     }
   }, 1000);
+  players.forEach(p => {
+    p.isPlaying = true;
+    p.lastControlledBy = 'global';
+    p.wrapper.classList.remove('user', 'offset');
+    p.wrapper.classList.add('global');
+  });
   syncPlayers();
 }
 
@@ -96,6 +114,12 @@ function pauseGlobal() {
   playToggle.textContent = '▶';
   clearInterval(playInterval);
   playInterval = null;
+  players.forEach(p => {
+    p.isPlaying = false;
+    p.lastControlledBy = 'global';
+    p.wrapper.classList.remove('user', 'offset');
+    p.wrapper.classList.add('global');
+  });
   syncPlayers();
 }
 
@@ -121,6 +145,7 @@ function movePlayer(player, dir) {
   const other = players[newIdx];
   [players[idx], players[newIdx]] = [players[newIdx], players[idx]];
   renderOrder();
+  updateGridLayout();
 }
 
 function shouldPlay(player, time) {
@@ -141,12 +166,18 @@ function syncPlayers() {
     if (playing) {
       if (shouldPlay(p, baseTime)) {
         p.player.play();
+        p.isPlaying = true;
       } else {
         p.player.pause();
+        p.isPlaying = false;
       }
     } else {
       p.player.pause();
+      p.isPlaying = false;
     }
+    p.lastControlledBy = 'global';
+    p.wrapper.classList.remove('user', 'offset');
+    p.wrapper.classList.add('global');
     if (p.infoTime) p.infoTime.textContent = new Date(baseTime + p.offset * 1000).toLocaleString();
   });
 }
@@ -277,6 +308,10 @@ function createPlayer(label, options, startTime, withChat, videoId, userId, dura
   wrapper.appendChild(div);
   wrapper.appendChild(overlay);
   container.appendChild(wrapper);
+  function updateStateClass() {
+    wrapper.classList.remove('global', 'user', 'offset');
+    wrapper.classList.add(player.lastControlledBy);
+  }
 
   if (withChat && options.channel) {
     const chat = document.createElement('iframe');
@@ -287,6 +322,20 @@ function createPlayer(label, options, startTime, withChat, videoId, userId, dura
   }
 
   const playerInstance = new Twitch.Player(id, options);
+  playerInstance.addEventListener(Twitch.Player.PLAY, () => {
+    player.isPlaying = true;
+    player.lastControlledBy = 'user';
+    updateStateClass();
+  });
+  playerInstance.addEventListener(Twitch.Player.PAUSE, () => {
+    player.isPlaying = false;
+    player.lastControlledBy = 'user';
+    updateStateClass();
+  });
+  playerInstance.addEventListener(Twitch.Player.SEEK, () => {
+    player.lastControlledBy = 'user';
+    updateStateClass();
+  });
   const info = document.createElement('div');
   info.className = 'vod-info';
   const pid = videoId ? String(videoId) : label;
@@ -322,11 +371,17 @@ function createPlayer(label, options, startTime, withChat, videoId, userId, dura
   info.appendChild(ctrl);
   vodList.appendChild(info);
 
-  const player = { label, id: pid, color, player: playerInstance, startTime, duration, offset: 0, offsetDisplay: display, infoTime: info.querySelector('.ptime'), infoOffset: off2, infoElem: info, wrapper };
-  minus.addEventListener('click', () => adjustOffset(player, -1));
-  plus.addEventListener('click', () => adjustOffset(player, 1));
-  minus2.addEventListener('click', () => adjustOffset(player, -1));
-  plus2.addEventListener('click', () => adjustOffset(player, 1));
+  const player = { label, id: pid, color, player: playerInstance, startTime, duration, offset: 0, offsetDisplay: display, infoTime: info.querySelector('.ptime'), infoOffset: off2, infoElem: info, wrapper, isPlaying: true, lastControlledBy: 'global' };
+  updateStateClass();
+  function offsetChanged(diff) {
+    adjustOffset(player, diff);
+    player.lastControlledBy = 'offset';
+    updateStateClass();
+  }
+  minus.addEventListener('click', () => offsetChanged(-1));
+  plus.addEventListener('click', () => offsetChanged(1));
+  minus2.addEventListener('click', () => offsetChanged(-1));
+  plus2.addEventListener('click', () => offsetChanged(1));
   mute.addEventListener('click', toggleMute);
   mute2.addEventListener('click', toggleMute);
   function toggleMute() {
@@ -349,10 +404,12 @@ function createPlayer(label, options, startTime, withChat, videoId, userId, dura
     seekBar.max = Math.max(7200, Math.ceil(maxDiff) + 300);
     renderOrder();
     updateMarkers();
+    updateGridLayout();
   });
 
   players.push(player);
   renderOrder();
+  updateGridLayout();
 
   if (!earliestStart || startTime < earliestStart) {
     earliestStart = startTime;
@@ -401,7 +458,10 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
   playToggle.textContent = '▶';
   updateSeekDisplay();
+  updateGridLayout();
 });
+
+window.addEventListener('resize', updateGridLayout);
 
 setInterval(() => {
   players.forEach(p => {

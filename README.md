@@ -29,7 +29,7 @@ UIは [TwitchTheater](https://twitchtheater.tv/) を参考に、画面右側の�
 - **シークバー**: 画面下部に固定されており、動かすとすべてのプレイヤーが基準時刻へシークします。
 
 ## 📦 公開例（GitHub Pages）
-- https://sinreikun.github.io/Twitch-sync-theater/
+- https://yourusername.github.io/Twitch-sync-theater/
 
 本ツールは非公式であり、Twitchとは無関係です
 
@@ -43,6 +43,7 @@ UIは [TwitchTheater](https://twitchtheater.tv/) を参考に、画面右側の�
 - グローバルシークバーから一括再生・停止が可能です
 - 配信時刻と一致しない動画は自動的に一時停止状態になります
 - 各VODカードからミュート切替や並び順の変更ができます
+- 操作優先度は「グローバルシークバー」>「±補正ボタン」>「各プレイヤー操作」の順で適用されます
 
 ### 🔐 Twitch API設定（初回のみ）
 
