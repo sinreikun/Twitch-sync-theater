@@ -159,6 +159,10 @@ function syncPlayers() {
   const baseTime = earliestStart + baseSeconds * 1000;
 
   players.forEach(p => {
+    if (p.lastControlledBy === 'user' && Date.now() - p.lastUserTime < 30000) {
+      if (p.infoTime) p.infoTime.textContent = new Date(baseTime + p.offset * 1000).toLocaleString();
+      return;
+    }
     let sec = (baseTime - p.startTime) / 1000 + p.offset;
     if (p.duration && sec > p.duration) sec = p.duration;
     if (sec < 0) sec = 0;
@@ -325,15 +329,18 @@ function createPlayer(label, options, startTime, withChat, videoId, userId, dura
   playerInstance.addEventListener(Twitch.Player.PLAY, () => {
     player.isPlaying = true;
     player.lastControlledBy = 'user';
+    player.lastUserTime = Date.now();
     updateStateClass();
   });
   playerInstance.addEventListener(Twitch.Player.PAUSE, () => {
     player.isPlaying = false;
     player.lastControlledBy = 'user';
+    player.lastUserTime = Date.now();
     updateStateClass();
   });
   playerInstance.addEventListener(Twitch.Player.SEEK, () => {
     player.lastControlledBy = 'user';
+    player.lastUserTime = Date.now();
     updateStateClass();
   });
   const info = document.createElement('div');
@@ -371,7 +378,7 @@ function createPlayer(label, options, startTime, withChat, videoId, userId, dura
   info.appendChild(ctrl);
   vodList.appendChild(info);
 
-  const player = { label, id: pid, color, player: playerInstance, startTime, duration, offset: 0, offsetDisplay: display, infoTime: info.querySelector('.ptime'), infoOffset: off2, infoElem: info, wrapper, isPlaying: true, lastControlledBy: 'global' };
+  const player = { label, id: pid, color, player: playerInstance, startTime, duration, offset: 0, offsetDisplay: display, infoTime: info.querySelector('.ptime'), infoOffset: off2, infoElem: info, wrapper, isPlaying: true, lastControlledBy: 'global', lastUserTime: 0 };
   updateStateClass();
   function offsetChanged(diff) {
     adjustOffset(player, diff);
@@ -471,3 +478,19 @@ setInterval(() => {
     }
   });
 }, 1000);
+
+function checkUserTimeout() {
+  const now = Date.now();
+  let changed = false;
+  players.forEach(p => {
+    if (p.lastControlledBy === 'user' && now - p.lastUserTime > 30000) {
+      p.lastControlledBy = 'global';
+      changed = true;
+    }
+  });
+  if (changed) {
+    syncPlayers();
+  }
+}
+
+setInterval(checkUserTimeout, 1000);
