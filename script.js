@@ -3,6 +3,7 @@ let earliestStart = null;
 
 const seekBar = document.getElementById('seek-bar');
 const seekTime = document.getElementById('seek-time');
+const sidebar = document.getElementById('sidebar');
 
 function formatTime(sec) {
   const h = Math.floor(sec / 3600).toString().padStart(2, '0');
@@ -31,6 +32,14 @@ function saveCredentials() {
   TwitchAPI.setCredentials(id, token);
 }
 
+document.getElementById('open-sidebar').addEventListener('click', () => {
+  sidebar.classList.add('open');
+});
+
+document.getElementById('close-sidebar').addEventListener('click', () => {
+  sidebar.classList.remove('open');
+});
+
 function adjustOffset(player, diff) {
   player.offset += diff;
   player.offsetDisplay.textContent = `${player.offset}s`;
@@ -54,6 +63,7 @@ async function addStream() {
   const val = input.value.trim();
   if (!val) return;
   input.value = '';
+  const withChat = document.getElementById('with-chat').checked;
 
   let startTime = null;
   let label = val;
@@ -91,10 +101,10 @@ async function addStream() {
     alert('開始時刻を取得できませんでした。とりあえず追加します。');
     startTime = Date.now();
   }
-  createPlayer(label, options, startTime);
+  createPlayer(label, options, startTime, withChat);
 }
 
-function createPlayer(label, options, startTime) {
+function createPlayer(label, options, startTime, withChat) {
   const container = document.getElementById('player-container');
   const wrapper = document.createElement('div');
   wrapper.className = 'player-wrapper';
@@ -102,28 +112,57 @@ function createPlayer(label, options, startTime) {
   const id = `tw-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
   div.id = id;
 
-  const controls = document.createElement('div');
-  controls.className = 'player-controls';
+  const overlay = document.createElement('div');
+  overlay.className = 'player-overlay';
 
+  const mute = document.createElement('button');
+  mute.textContent = '🔈';
   const minus = document.createElement('button');
   minus.textContent = '-1s';
   const plus = document.createElement('button');
   plus.textContent = '+1s';
   const display = document.createElement('span');
+  display.className = 'offset-display';
   display.textContent = '0s';
+  const remove = document.createElement('button');
+  remove.textContent = '×';
 
-  controls.appendChild(minus);
-  controls.appendChild(display);
-  controls.appendChild(plus);
+  overlay.appendChild(mute);
+  overlay.appendChild(minus);
+  overlay.appendChild(display);
+  overlay.appendChild(plus);
+  overlay.appendChild(remove);
 
   wrapper.appendChild(div);
-  wrapper.appendChild(controls);
+  wrapper.appendChild(overlay);
   container.appendChild(wrapper);
+
+  if (withChat && options.channel) {
+    const chat = document.createElement('iframe');
+    chat.src = `https://www.twitch.tv/embed/${options.channel}/chat?parent=${location.hostname}`;
+    chat.width = "100%";
+    chat.height = "200";
+    wrapper.appendChild(chat);
+  }
 
   const playerInstance = new Twitch.Player(id, options);
   const player = { label, player: playerInstance, startTime, offset: 0, offsetDisplay: display };
   minus.addEventListener('click', () => adjustOffset(player, -1));
   plus.addEventListener('click', () => adjustOffset(player, 1));
+  mute.addEventListener('click', () => {
+    const muted = playerInstance.getMuted();
+    playerInstance.setMuted(!muted);
+    mute.textContent = muted ? '🔈' : '🔇';
+  });
+  remove.addEventListener('click', () => {
+    wrapper.remove();
+    players = players.filter(p => p !== player);
+    if (players.length === 0) {
+      earliestStart = null;
+    } else {
+      earliestStart = Math.min(...players.map(p => p.startTime));
+    }
+  });
 
   players.push(player);
 

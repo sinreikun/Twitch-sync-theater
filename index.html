@@ -8,24 +8,29 @@
   <script src="https://player.twitch.tv/js/embed/v1.js"></script>
 </head>
 <body>
-  <header>
-    <h1>Twitch Sync Theater</h1>
-    <div id="controls">
+  <nav id="sidebar" class="closed">
+    <button id="close-sidebar">×</button>
+    <section>
+      <h2>Add Stream</h2>
       <input type="text" id="channel-input" placeholder="チャンネル名 or VOD URL">
+      <label><input type="checkbox" id="with-chat"> チャット付き</label>
       <button id="add-button">追加</button>
+    </section>
+    <section>
+      <h2>Control</h2>
       <button id="sync-button">同期再生</button>
       <input type="range" id="seek-bar" min="0" max="7200" value="0" step="1">
       <span id="seek-time">00:00:00</span>
-    </div>
-    <div id="api-settings">
+    </section>
+    <section>
+      <h2>API</h2>
       <label>Client ID: <input type="text" id="client-id"></label>
       <label>OAuth Token: <input type="text" id="oauth-token"></label>
       <button id="save-api">保存</button>
-    </div>
-  </header>
-  <main id="player-container">
-    <!-- プレイヤーがここに生成される -->
-  </main>
+    </section>
+  </nav>
+  <button id="open-sidebar">☰</button>
+  <main id="player-container"></main>
   <script src="twitch-api.js"></script>
   <script src="script.js"></script>
 </body>
