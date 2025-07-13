@@ -98,8 +98,8 @@ async function addStream() {
   }
 
   if (!startTime) {
-    alert('開始時刻を取得できませんでした。とりあえず追加します。');
-    startTime = Date.now();
+    alert('開始時刻を取得できませんでした');
+    return;
   }
   createPlayer(label, options, startTime, withChat);
 }
@@ -186,14 +186,7 @@ seekBar.addEventListener('input', () => {
 
 document.getElementById('add-button').addEventListener('click', addStream);
 document.getElementById('sync-button').addEventListener('click', syncPlayers);
-document.getElementById('save-credentials').addEventListener('click', () => {
-  const cid = document.getElementById('client-id').value.trim();
-  const token = document.getElementById('oauth-token').value.trim();
-  TwitchAPI.saveCredentials(cid, token);
-});
 window.addEventListener('DOMContentLoaded', () => {
   TwitchAPI.init();
-  document.getElementById('client-id').value = localStorage.getItem('twitch_client_id') || '';
-  document.getElementById('oauth-token').value = localStorage.getItem('twitch_oauth_token') || '';
   updateSeekDisplay();
 });
