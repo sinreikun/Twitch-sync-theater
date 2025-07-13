@@ -73,9 +73,24 @@ async function addStream() {
     parent: [location.hostname]
   };
 
-  const match = val.match(/videos\/(\d+)/);
+  const match = val.match(/twitch\.tv\/videos\/(\d+)/);
+  if (val.includes('twitch.tv/videos') && !match) {
+    alert('VODのIDを抽出できませんでした');
+    return;
+  }
   if (match) {
     const videoId = match[1];
+    console.log(`\u{1F3AC} VOD ID: ${videoId}`);
+    try {
+      startTime = await TwitchAPI.getVideoStartTime(videoId);
+    } catch (e) {
+      console.error(e);
+    }
+    options.video = videoId;
+    label = `v${videoId}`;
+  } else if (/^\d+$/.test(val)) {
+    const videoId = val;
+    console.log(`\u{1F3AC} VOD ID: ${videoId}`);
     try {
       startTime = await TwitchAPI.getVideoStartTime(videoId);
     } catch (e) {
