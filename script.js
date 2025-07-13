@@ -16,21 +16,6 @@ function updateSeekDisplay() {
   seekTime.textContent = formatTime(parseInt(seekBar.value, 10));
 }
 
-function loadCredentials() {
-  const id = localStorage.getItem('clientId') || '';
-  const token = localStorage.getItem('oauthToken') || '';
-  document.getElementById('client-id').value = id;
-  document.getElementById('oauth-token').value = token;
-  if (id && token) {
-    TwitchAPI.setCredentials(id, token);
-  }
-}
-
-function saveCredentials() {
-  const id = document.getElementById('client-id').value.trim();
-  const token = document.getElementById('oauth-token').value.trim();
-  TwitchAPI.setCredentials(id, token);
-}
 
 document.getElementById('toggle-sidebar').addEventListener('click', () => {
   sidebar.classList.toggle('closed');
@@ -176,8 +161,7 @@ seekBar.addEventListener('input', () => {
 
 document.getElementById('add-button').addEventListener('click', addStream);
 document.getElementById('sync-button').addEventListener('click', syncPlayers);
-document.getElementById('save-api').addEventListener('click', saveCredentials);
 window.addEventListener('DOMContentLoaded', () => {
-  loadCredentials();
+  TwitchAPI.init();
   updateSeekDisplay();
 });
