@@ -32,12 +32,8 @@ function saveCredentials() {
   TwitchAPI.setCredentials(id, token);
 }
 
-document.getElementById('open-sidebar').addEventListener('click', () => {
-  sidebar.classList.add('open');
-});
-
-document.getElementById('close-sidebar').addEventListener('click', () => {
-  sidebar.classList.remove('open');
+document.getElementById('toggle-sidebar').addEventListener('click', () => {
+  sidebar.classList.toggle('closed');
 });
 
 function adjustOffset(player, diff) {
