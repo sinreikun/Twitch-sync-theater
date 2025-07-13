@@ -102,8 +102,7 @@ function startGlobal() {
   players.forEach(p => {
     p.isPlaying = true;
     p.lastControlledBy = 'global';
-    p.wrapper.classList.remove('user', 'offset');
-    p.wrapper.classList.add('global');
+    p.updateStateClass();
   });
   syncPlayers(true);
 }
@@ -117,8 +116,7 @@ function pauseGlobal() {
   players.forEach(p => {
     p.isPlaying = false;
     p.lastControlledBy = 'global';
-    p.wrapper.classList.remove('user', 'offset');
-    p.wrapper.classList.add('global');
+    p.updateStateClass();
   });
   syncPlayers(true);
 }
@@ -159,9 +157,11 @@ function syncPlayers(force = false) {
   const baseTime = earliestStart + baseSeconds * 1000;
 
   players.forEach(p => {
-    if (!force && p.lastControlledBy === 'user' && Date.now() - p.lastUserTime < 30000) {
-      if (p.infoTime) p.infoTime.textContent = new Date(baseTime + p.offset * 1000).toLocaleString();
-      return;
+    if (!force) {
+      if (p.lastControlledBy === 'user' && Date.now() - p.lastUserTime < 30000) {
+        if (p.infoTime) p.infoTime.textContent = new Date(baseTime + p.offset * 1000).toLocaleString();
+        return;
+      }
     }
     let sec = (baseTime - p.startTime) / 1000 + p.offset;
     if (p.duration && sec > p.duration) sec = p.duration;
@@ -180,8 +180,7 @@ function syncPlayers(force = false) {
       p.isPlaying = false;
     }
     p.lastControlledBy = 'global';
-    p.wrapper.classList.remove('user', 'offset');
-    p.wrapper.classList.add('global');
+    p.updateStateClass();
     if (p.infoTime) p.infoTime.textContent = new Date(baseTime + p.offset * 1000).toLocaleString();
   });
 }
@@ -378,7 +377,7 @@ function createPlayer(label, options, startTime, withChat, videoId, userId, dura
   info.appendChild(ctrl);
   vodList.appendChild(info);
 
-  const player = { label, id: pid, color, player: playerInstance, startTime, duration, offset: 0, offsetDisplay: display, infoTime: info.querySelector('.ptime'), infoOffset: off2, infoElem: info, wrapper, isPlaying: true, lastControlledBy: 'global', lastUserTime: 0 };
+  const player = { label, id: pid, color, player: playerInstance, startTime, duration, offset: 0, offsetDisplay: display, infoTime: info.querySelector('.ptime'), infoOffset: off2, infoElem: info, wrapper, isPlaying: true, lastControlledBy: 'global', lastUserTime: 0, updateStateClass };
   updateStateClass();
   function offsetChanged(diff) {
     adjustOffset(player, diff);
@@ -430,6 +429,10 @@ function createPlayer(label, options, startTime, withChat, videoId, userId, dura
 
 seekBar.addEventListener('input', () => {
   updateSeekDisplay();
+  players.forEach(p => {
+    p.lastControlledBy = 'global';
+    p.updateStateClass();
+  });
   syncPlayers(true);
 });
 

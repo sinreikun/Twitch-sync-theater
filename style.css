@@ -156,6 +156,16 @@ body.sidebar-open #player-container {
   outline: 2px solid #4af;
 }
 
+.player-wrapper.global::after {
+  content: 'GLOBAL';
+  position: absolute;
+  bottom: 5px;
+  left: 5px;
+  background: rgba(0,0,0,0.6);
+  padding: 2px 4px;
+  font-size: 12px;
+}
+
 .player-wrapper.offset {
   outline: 2px solid #fa4;
 }
