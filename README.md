@@ -29,7 +29,7 @@ UIは [TwitchTheater](https://twitchtheater.tv/) を参考に、画面右側の�
 - **シークバー**: 画面下部に固定されており、動かすとすべてのプレイヤーが基準時刻へシークします。
 
 ## 📦 公開例（GitHub Pages）
-- https://yourusername.github.io/Twitch-sync-theater/
+- https://sinreikun.github.io/Twitch-sync-theater/
 
 本ツールは非公式であり、Twitchとは無関係です
 
