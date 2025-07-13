@@ -45,7 +45,7 @@ function syncPlayers() {
   players.forEach(p => {
     let sec = (baseTime - p.startTime) / 1000 + p.offset;
     if (sec < 0) sec = 0;
-    p.iframe.contentWindow.postMessage({ event: 'command', func: 'seek', args: [sec] }, '*');
+    p.player.seek(sec);
   });
 }
 
@@ -55,44 +55,52 @@ async function addStream() {
   if (!val) return;
   input.value = '';
 
-  let url;
   let startTime = null;
   let label = val;
+  let options = {
+    width: 640,
+    height: 360,
+    parent: [location.hostname]
+  };
 
   const match = val.match(/videos\/(\d+)/);
   if (match) {
     const videoId = match[1];
-    startTime = await TwitchAPI.getVideoStartTime(videoId);
-    url = `https://player.twitch.tv/?video=${videoId}&parent=${location.hostname}&autoplay=false`;
+    try {
+      startTime = await TwitchAPI.getVideoStartTime(videoId);
+    } catch (e) {
+      console.error(e);
+    }
+    options.video = videoId;
     label = `v${videoId}`;
   } else {
     const login = val.toLowerCase();
-    startTime = await TwitchAPI.getLiveStartTime(login);
-    if (!startTime) {
-      const uid = await TwitchAPI.getUserId(login);
-      if (uid) startTime = await TwitchAPI.getLatestVODStartTime(uid);
+    try {
+      startTime = await TwitchAPI.getLiveStartTime(login);
+      if (!startTime) {
+        const uid = await TwitchAPI.getUserId(login);
+        if (uid) startTime = await TwitchAPI.getLatestVODStartTime(uid);
+      }
+    } catch (e) {
+      console.error(e);
     }
-    url = `https://player.twitch.tv/?channel=${login}&parent=${location.hostname}&autoplay=false`;
+    options.channel = login;
   }
 
   if (!startTime) {
-    alert('開始時刻を取得できませんでした');
-    return;
+    alert('開始時刻を取得できませんでした。とりあえず追加します。');
+    startTime = Date.now();
   }
-
-  createPlayer(label, url, startTime);
+  createPlayer(label, options, startTime);
 }
 
-function createPlayer(label, url, startTime) {
+function createPlayer(label, options, startTime) {
   const container = document.getElementById('player-container');
   const wrapper = document.createElement('div');
   wrapper.className = 'player-wrapper';
-
-  const iframe = document.createElement('iframe');
-  iframe.src = url;
-  iframe.height = 360;
-  iframe.width = 640;
-  iframe.allow = 'autoplay; fullscreen';
+  const div = document.createElement('div');
+  const id = `tw-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  div.id = id;
 
   const controls = document.createElement('div');
   controls.className = 'player-controls';
@@ -108,11 +116,12 @@ function createPlayer(label, url, startTime) {
   controls.appendChild(display);
   controls.appendChild(plus);
 
-  wrapper.appendChild(iframe);
+  wrapper.appendChild(div);
   wrapper.appendChild(controls);
   container.appendChild(wrapper);
 
-  const player = { label, iframe, startTime, offset: 0, offsetDisplay: display };
+  const playerInstance = new Twitch.Player(id, options);
+  const player = { label, player: playerInstance, startTime, offset: 0, offsetDisplay: display };
   minus.addEventListener('click', () => adjustOffset(player, -1));
   plus.addEventListener('click', () => adjustOffset(player, 1));
 
